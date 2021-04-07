@@ -58,12 +58,13 @@ class ArrowDetecting():
         self.col_ar = []
         self.nav = []
         self.mas = []
+        self.zz = 2
         self.color_arrow = 'black'
         self.sect = ['Sector B','Sector D','Sector A','Sector C']
         self.arrow = 'Sector D'
         self.bridge = CvBridge()                                                                                     
         self.image_sub = rospy.Subscriber("main_camera/image_raw",Image,self.callback)  # ?????????? ?? ????? ???????????
-    def navigate_wait(self, x=0, y=0, z=0, yaw=math.radians(90), speed=0.3, frame_id='aruco_map', auto_arm=False, tolerance=0.15):
+    def navigate_wait(self, x=0, y=0, z=0, yaw=math.radians(90), speed=1, frame_id='aruco_map', auto_arm=False, tolerance=0.15):
         navigate(x=x, y=y, z=z, yaw=yaw, speed=speed, frame_id=frame_id, auto_arm=auto_arm)
 
         while not rospy.is_shutdown():
@@ -73,7 +74,7 @@ class ArrowDetecting():
             rospy.sleep(0.1)
     def navigate_mas(self):
         for x, y in self.mas:
-            navigate_wait(x=x,y=y,z=self.zz, frame_id='aruco_map')
+            self.navigate_wait(x=x*0.2,y=y*0.2,z=self.zz, frame_id='aruco_map')
     def dop_oblet(self):
         lenn = len(self.col_ar)
         for i in range(lenn-1):
@@ -278,5 +279,8 @@ col = ArrowDetecting(True)
 #col.Color = True
 #col.Arrow = True
 col.Qr = True
-rospy.sleep(10)
+rospy.sleep(2)
+
+col.navigate_mas()
+land()
 
