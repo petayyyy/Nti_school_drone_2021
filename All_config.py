@@ -59,6 +59,7 @@ class ArrowDetecting():
         self.nav = []
         self.mas = []
         self.zz = 2
+        self.cx, self.cy = -1, -1
         self.color_arrow = 'black'
         self.sect = ['Sector B','Sector D','Sector A','Sector C']
         self.arrow = 'Sector D'
@@ -75,6 +76,37 @@ class ArrowDetecting():
     def navigate_mas(self):
         for x, y in self.mas:
             self.navigate_wait(x=x*0.2,y=y*0.2,z=self.zz, frame_id='aruco_map')
+    def normalize(self, x, y):
+        return x / math.sqrt(x ** 2 + y ** 2), y / math.sqrt(x ** 2 + y ** 2)
+    def land_on_dronpoint():
+        image_sub = rospy.Subscriber('main_camera/image_raw', Image, getCenterOfContour_callback, queue_size=1)
+        rospy.sleep(1)
+
+        x0, y0 = 320 // 2, 240 // 2
+
+        while math.sqrt((x0 - self.cx) ** 2 + (y0 - self.cy) ** 2) > 5:
+            telem = get_telemetry(frame_id='aruco_map')
+
+            dx, dy = self.normalize(self.cx - x0, self.cy - y0)  # get final motion vector 
+            dx /= 15  # limit the speed
+            dy /= 15
+            dy = -dy  # the y-axis of the frame is directed in the opposite direction of the y-axis of the marker map
+            set_position(x=telem.x + dx, y=telem.y + dy, z=self.zz, yaw=math.radians(90), frame_id='aruco_map')
+            rospy.sleep(0.1)
+
+        if indic == 'black':
+            set_effect(effect='fade', r=255, g=255, b=255)
+        elif indic == 'red':
+            set_effect(effect='fade', r=255, g=0, b=0)
+        elif indic == 'blue':
+            set_effect(effect='fade', r=0, g=0, b=255)
+        elif indic == 'yellow':
+            set_effect(effect='fade', r=255, g=255, b=0)
+
+        land()
+        rospy.sleep(1)
+        arming(False)
+
     def dop_oblet(self):
         lenn = len(self.col_ar)
         for i in range(lenn-1):
@@ -220,7 +252,11 @@ class ArrowDetecting():
 
         need_arr = min(arr, key=lambda x: x[1])
         num = need_arr[2]
-        #cv2.drawContours(out, [need_arr[0]], -1, (255, 105, 180), 3)
+        cv2.drawContours(out, [need_arr[0]], -1, (255, 105, 180), 3)
+        try:
+            self.image_pub.publish(self.bridge.cv2_to_imgmsg(out, "bgr8")) # ????? ?????? ??? ?????? 1
+        except CvBridgeError as e:
+            print(e)
         self.arrow = self.sect[num]
         print('{} required'.format(self.arrow))
 
@@ -236,6 +272,12 @@ class ArrowDetecting():
                 if sum_pixel > 300:
                     self.color_arrow = a
                     self.Color = False
+                    if a == 'green':
+                        sum_y = moments['m01']
+                        sum_x = moments['m10']
+                        self.cx = int(sum_y / sum_pixel)
+                        self.cy = int(sum_x / sum_pixel)
+                        print(self.cx,self.cy)
                 print(a)
                     #cv2.drawContours(img, [c], 0, (193,91,154), 2)
             except:pass
@@ -271,6 +313,8 @@ class ArrowDetecting():
             self.color(cv2.inRange(img, self.blue_low, self.blue_high),'blue')          #Blue
         if self.Arrow:
             self.find_arrow(img.copy())
+        if self.Dron_point:
+            self.color(cv2.inRange(img, self.green_low, self.green_high),'green') 
         try:
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(img, "bgr8")) # ????? ?????? ??? ?????? 1
         except CvBridgeError as e:
