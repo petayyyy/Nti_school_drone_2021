@@ -37,6 +37,8 @@ class ArrowDetecting():
             self.yellow_low = np.array([0,240,240])
             self.yellow_high = np.array([10,255,255])
 
+            self.green_low = np.array([50, 55, 50]) 
+            self.green_high = np.array([85, 255, 255])
         else: # ????????? ??? ????????? ??????
             self.red_low = np.array([55,55,170])                            
             self.red_high = np.array([135,125,255])                                                                           
@@ -78,12 +80,8 @@ class ArrowDetecting():
             self.navigate_wait(x=x*0.2,y=y*0.2,z=self.zz, frame_id='aruco_map')
     def normalize(self, x, y):
         return x / math.sqrt(x ** 2 + y ** 2), y / math.sqrt(x ** 2 + y ** 2)
-    def land_on_dronpoint():
-        image_sub = rospy.Subscriber('main_camera/image_raw', Image, getCenterOfContour_callback, queue_size=1)
-        rospy.sleep(1)
-
+    def land_on_dronpoint(self):
         x0, y0 = 320 // 2, 240 // 2
-
         while math.sqrt((x0 - self.cx) ** 2 + (y0 - self.cy) ** 2) > 5:
             telem = get_telemetry(frame_id='aruco_map')
 
@@ -93,16 +91,6 @@ class ArrowDetecting():
             dy = -dy  # the y-axis of the frame is directed in the opposite direction of the y-axis of the marker map
             set_position(x=telem.x + dx, y=telem.y + dy, z=self.zz, yaw=math.radians(90), frame_id='aruco_map')
             rospy.sleep(0.1)
-
-        if indic == 'black':
-            set_effect(effect='fade', r=255, g=255, b=255)
-        elif indic == 'red':
-            set_effect(effect='fade', r=255, g=0, b=0)
-        elif indic == 'blue':
-            set_effect(effect='fade', r=0, g=0, b=255)
-        elif indic == 'yellow':
-            set_effect(effect='fade', r=255, g=255, b=0)
-
         land()
         rospy.sleep(1)
         arming(False)
@@ -273,10 +261,13 @@ class ArrowDetecting():
                     self.color_arrow = a
                     self.Color = False
                     if a == 'green':
-                        sum_y = moments['m01']
-                        sum_x = moments['m10']
-                        self.cx = int(sum_y / sum_pixel)
-                        self.cy = int(sum_x / sum_pixel)
+                        [x, y, w, h] = cv2.boundingRect(c)  # getting the the coordinates of the bigest contour 
+                        self.cx = x + w // 2
+                        self.cy = y + h // 2
+                        #sum_y = moments['m01']
+                        #sum_x = moments['m10']
+                        #self.cx = int(sum_y / sum_pixel)
+                        #self.cy = int(sum_x / sum_pixel)
                         print(self.cx,self.cy)
                 print(a)
                     #cv2.drawContours(img, [c], 0, (193,91,154), 2)
@@ -314,7 +305,8 @@ class ArrowDetecting():
         if self.Arrow:
             self.find_arrow(img.copy())
         if self.Dron_point:
-            self.color(cv2.inRange(img, self.green_low, self.green_high),'green') 
+            self.color(cv2.inRange(img, self.green_low, self.green_high),'green')
+            print(self.cx,self.cy) 
         try:
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(img, "bgr8")) # ????? ?????? ??? ?????? 1
         except CvBridgeError as e:
@@ -322,9 +314,9 @@ class ArrowDetecting():
 col = ArrowDetecting(True)
 #col.Color = True
 #col.Arrow = True
-col.Qr = True
+col.Dron_point = True
 rospy.sleep(2)
 
-col.navigate_mas()
-land()
+col.land_on_dronpoint()
+#land()
 
