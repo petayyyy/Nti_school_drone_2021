@@ -57,11 +57,127 @@ class ArrowDetecting():
         self.order = -1
         self.col_ar = []
         self.nav = []
+        self.mas = []
         self.color_arrow = 'black'
         self.sect = ['Sector B','Sector D','Sector A','Sector C']
         self.arrow = 'Sector D'
         self.bridge = CvBridge()                                                                                     
         self.image_sub = rospy.Subscriber("main_camera/image_raw",Image,self.callback)  # ?????????? ?? ????? ???????????
+    def navigate_wait(self, x=0, y=0, z=0, yaw=math.radians(90), speed=0.3, frame_id='aruco_map', auto_arm=False, tolerance=0.15):
+        navigate(x=x, y=y, z=z, yaw=yaw, speed=speed, frame_id=frame_id, auto_arm=auto_arm)
+
+        while not rospy.is_shutdown():
+            telem = get_telemetry(frame_id='navigate_target')
+            if math.sqrt(telem.x ** 2 + telem.y ** 2 + telem.z ** 2) < tolerance:
+                break
+            rospy.sleep(0.1)
+    def navigate_mas(self):
+        for x, y in self.mas:
+            navigate_wait(x=x,y=y,z=self.zz, frame_id='aruco_map')
+    def dop_oblet(self):
+        lenn = len(self.col_ar)
+        for i in range(lenn-1):
+            for j in range(i+1,lenn): 
+                if i!=j and ((self.col_ar[i][0] - self.col_ar[j][0])**2 + (self.col_ar[i][1] - self.col_ar[j][1])**2)**0.5 <= 0.8:  
+                    self.col_ar.append([min(self.col_ar[i][0],self.col_ar[j][0]) + abs(self.col_ar[i][0] - self.col_ar[j][0])/2, min(self.col_ar[i][1],self.col_ar[j][1]) + abs(self.col_ar[i][1] - self.col_ar[j][1])/2])    
+    def check(self,x,y):
+        if True in [True for i in range(len(self.col_ar)) if ((x*0.2-self.col_ar[i][0])**2 + (y*0.2-self.col_ar[i][1])**2)**(1/2) < 0.4]: return True
+        else: return False
+    def check_line(self, a=1,b = 1):
+        for i in range(17):
+            if a == 0:
+                if self.check(self.nav_x+i,self.f_y + abs(self.f_x-self.nav_x)) == False and self.nav_x+i <= 12:
+                    self.v1 = self.nav_x+i
+                    if b == 1: self.v2 = self.f_y + abs(self.f_x-self.nav_x)
+                    else: self.v2 = self.f_y
+                    return True
+                elif self.check(self.nav_x-i,self.f_y + abs(self.f_x-self.nav_x)) == False and self.nav_x-i >= 0:
+                    self.v1 = self.nav_x-i
+                    if b == 1: self.v2 = self.f_y + abs(self.f_x-self.nav_x)
+                    else: self.v2 = self.f_y
+                    return True
+            else:
+                if self.check(self.f_x + abs(self.f_y-self.nav_y),self.nav_y+i) == False and self.nav_y+i <= 12:
+                    self.v2 = self.nav_y+i
+                    if b == 1 : self.v1 = self.f_x + abs(self.f_y-self.nav_y)
+                    else: self.v1 = self.f_x
+                    return True
+                elif self.check(self.f_x + abs(self.f_y-self.nav_y),self.nav_y-i) == False and self.nav_y-i >= 0:
+                    self.v2 = self.nav_y-i
+                    if b == 1: self.v1 = self.f_x + abs(self.f_y-self.nav_y)
+                    else: self.v1 = self.f_x
+                    return True
+            return False
+    def check_circle(self):
+        for i in range(17):
+            if self.det_line(self.f_x+i,self.f_y,self.v1,self.v2) == True and self.f_x+i <= 16 and self.det_line(self.f_x,self.f_y,self.f_x+i,self.f_y) == True:
+                self.mas.append([self.f_x+i,self.f_y])
+                self.mas.append([self.v1,self.v2])
+                self.f_x, self.f_y = self.v1, self.v2
+                return True
+            elif self.det_line(self.f_x-i,self.f_y,self.v1,self.v2) == True and self.f_x-i >= 0 and self.det_line(self.f_x,self.f_y,self.f_x-i,self.f_y) == True:
+                self.mas.append([self.f_x-i,self.f_y])
+                self.mas.append([self.v1,self.v2])
+                self.f_x, self.f_y = self.v1, self.v2
+                return True
+            elif self.det_line(self.f_x,self.f_y+i,self.v1,self.v2) == True and self.f_y+i <= 12 and self.det_line(self.f_x,self.f_y,self.f_x,self.f_y+i) == True:
+                self.mas.append([self.f_x,self.f_y+i])
+                self.mas.append([self.v1,self.v2])
+                self.f_x, self.f_y = self.v1, self.v2
+                return True
+            elif self.det_line(self.f_x,self.f_y-i,self.v1,self.v2) == True and self.f_y-i >= 0 and self.det_line(self.f_x,self.f_y,self.f_x,self.f_y-i) == True:
+                self.mas.append([self.f_x,self.f_y-i])
+                self.mas.append([self.v1,self.v2])
+                self.f_x, self.f_y = self.v1, self.v2
+                return True
+        return False
+    def det_line(self,x1,y1,x2,y2,r=0.39):
+        x1,y1,x2,y2 = x1*0.2,y1*0.2,x2*0.2,y2*0.2
+        for x,y in self.col_ar:
+            try:
+                k = (y1 - y2)/(x1 - x2)
+                b0 = y1 - k*x1
+                a = k**2 + 1
+                b = 2*k*(b0 - y) - 2*x
+                c = (b0 - y)**2 + x**2 - r**2
+                delta = b**2 - 4*a*c
+                if delta >= 0: return False
+            except: pass
+        return True
+    def vector_x(self):
+        self.v1,self.v2 = self.nav_x, self.nav_y
+        if self.check_circle() == False:
+            for i in range(12):
+                self.v1,self.v2 = self.nav_x+i, self.nav_y
+                if self.check_circle(): break
+                self.v1,self.v2 = self.nav_x-i, self.nav_y
+                if self.check_circle(): break
+    def vector_y(self): 
+        self.v1,self.v2 = self.nav_x, self.nav_y
+        if self.check_circle() == False:
+            for i in range(12):
+                self.v1,self.v2 = self.nav_x, self.nav_y+i
+                if self.check_circle(): break
+                self.v1,self.v2 = self.nav_x, self.nav_y-i
+                if self.check_circle(): break
+
+    def navigate_avoidece(self, start, finish):
+        self.nav_x, self.nav_y = (finish[0]*100)//20, (finish[1]*100)//20
+        self.f_x, self.f_y = start[0]//0.2, start[1]//0.2
+        h = 0
+        while (self.f_x != self.nav_x or self.f_y != self.nav_y) and h < 5:
+            h+=1
+            if self.f_x == self.nav_x:
+                self.vector_y()
+            elif self.f_y == self.nav_y:
+                self.vector_x()
+            else:
+                if self.nav_x < self.nav_y:
+                    self.check_line(a=0)
+                else: 
+                    self.check_line(a=1)
+                self.check_circle()
+    
     def find_arrow(self,im):
         samples = np.loadtxt('generalsamples.data', np.float32)
         responses = np.loadtxt('generalresponses.data', np.float32)
@@ -137,11 +253,15 @@ class ArrowDetecting():
                         self.qr_data = (bar.data.decode("utf-8")).split('\n') # ?????????? ? ?????????? ??????????, ??????????? ? ?????? ????
                         for i in range (0,len(self.qr_data[0].split())-1,2): 
                             print('Column area x={}, y={}'.format(self.qr_data[0].split()[i],self.qr_data[0].split()[i+1]))
-                            self.col_ar.append([float(self.qr_data[0].split()[i]),float(self.qr_data[0].split()[i+1])])
+                            self.col_ar.append([float(self.qr_data[0].split()[i]), float(self.qr_data[0].split()[i+1])])
                         print('Navigation area x={}, y={}'.format(self.qr_data[1].split()[0],self.qr_data[1].split()[-1]))
-                        self.nav.append([float(self.qr_data[1].split()[0]),float(self.qr_data[1].split()[-1])])
+                        self.nav.append(float(self.qr_data[1].split()[0]))
+                        self.nav.append(float(self.qr_data[1].split()[-1]))
                         print('Order number: {}'.format(self.qr_data[-1]))
                         self.order = int(self.qr_data[-1])
+                        self.dop_oblet()
+                        self.navigate_avoidece([0.4,0.8], self.nav)
+
                     (x, y, w, h) = bar.rect
                     cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
         if self.Color:
@@ -156,7 +276,7 @@ class ArrowDetecting():
             print(e)        
 col = ArrowDetecting(True)
 #col.Color = True
-col.Arrow = True
-#col.Qr = True
+#col.Arrow = True
+col.Qr = True
 rospy.sleep(10)
 
