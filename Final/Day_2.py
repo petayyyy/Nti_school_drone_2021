@@ -33,6 +33,7 @@ if main.order == -1:
         exit()
 main.navigate_avoidece([0.4,0.8], main.nav)
 main.Arrow = True
+rospy.sleep(2)
 main.sect_fly()
 if main.cx == -1:
     print("Dronpoint don't detecting")
