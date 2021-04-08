@@ -107,6 +107,9 @@ class Main_Config():
         land()
         rospy.sleep(1)
         arming(False)
+	rospy.sleep(5)
+	set_effect(effect='fade', r=0, g=0, b=0)
+	print('{} delivered in {}'.format(self.order,self.arrow))
 
     def dop_oblet(self):
         lenn = len(self.col_ar)
@@ -253,7 +256,7 @@ class Main_Config():
 
         need_arr = min(arr, key=lambda x: x[1])
         num = need_arr[2]
-        cv2.drawContours(out, [need_arr[0]], -1, (255, 105, 180), 3)
+        cv2.drawContours(out, [need_arr[0]], -1, (255,105,180), 3)
         try:
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(out, "bgr8")) # ????? ?????? ??? ?????? 1
         except CvBridgeError as e:
@@ -333,7 +336,7 @@ class Main_Config():
                         self.navigate_avoidece([0.4,0.8], self.nav)
 
                     (x, y, w, h) = bar.rect
-                    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                    cv2.rectangle(img, (x, y), (x + w, y + h), (255,105,180), 2)
         if self.Color:
             self.color(cv2.inRange(img, self.red_low, self.red_high),'red')          #Red
             self.color(cv2.inRange(img, self.yellow_low, self.yellow_high),'yellow')   #Yellow
@@ -342,7 +345,7 @@ class Main_Config():
             self.find_arrow(img.copy())
         if self.Dron_point:
             if self.dronpoint_detect(img.copy()):
-                cv2.drawContours(img, [self.cnt], 0, (193,91,154), 2)
+                cv2.drawContours(img, [self.cnt], 0, (255,105,180), 2)
         try:
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(img, "bgr8"))
         except CvBridgeError as e:
