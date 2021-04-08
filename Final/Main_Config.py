@@ -114,7 +114,7 @@ class Main_Config():
     def navigate_mas(self):
 	# Функция полета по координатам маршрута, построенного в обход препятствий
         for x, y in self.mas:
-            self.navigate_wait(x=x*0.2,y=y*0.2,z=self.zz, frame_id='aruco_map')
+            self.navigate_wait(x=x*0.2,y=y*0.2,z=1.5, frame_id='aruco_map')
     def normalize(self, x, y):
 	# Функция нормализации координат
         return x / math.sqrt(x ** 2 + y ** 2), y / math.sqrt(x ** 2 + y ** 2)
@@ -275,7 +275,9 @@ class Main_Config():
 		    # И пробуем выравнивается по y
                     self.check_line(a=1)
                 self.check_circle()
-    
+        self.navigate_mas()
+	self.navigate_wait(x=finish[1], y=finish[1], z=0.5, frame_id='aruco_map')
+	
     def find_arrow(self,im):
 	# Функция распознавания положения навигационной стрелки
 	# Берем модели стрелок
