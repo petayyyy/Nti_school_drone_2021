@@ -14,12 +14,14 @@ from mavros_msgs.srv import CommandBool
 from clover import srv
 from std_srvs.srv import Trigger
 from sensor_msgs.msg import Range
+from clover.srv import SetLEDEffect
 
 get_telemetry = rospy.ServiceProxy('get_telemetry', srv.GetTelemetry)
 set_position = rospy.ServiceProxy('set_position', srv.SetPosition)
 navigate = rospy.ServiceProxy('navigate', srv.Navigate)
 arming = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
 land = rospy.ServiceProxy('land', Trigger)
+set_effect = rospy.ServiceProxy('led/set_effect', SetLEDEffect)
 
 class ArrowDetecting():                                                                                              
     def __init__(self, simulator):
@@ -57,6 +59,7 @@ class ArrowDetecting():
         self.Arrow = False   
         self.Qr = False
         self.Color = False
+        self.Dron_point = False
         
         self.order = -1
         self.col_ar = []
@@ -93,6 +96,14 @@ class ArrowDetecting():
             dy = -dy  # the y-axis of the frame is directed in the opposite direction of the y-axis of the marker map
             set_position(x=telem.x + dx, y=telem.y + dy, z=self.zz, yaw=math.radians(90), frame_id='aruco_map')
             rospy.sleep(0.1)
+        if self.color_arrow == 'black':
+            set_effect(effect='fade', r=255, g=255, b=255)
+        elif self.color_arrow == 'red':
+            set_effect(effect='fade', r=255, g=0, b=0)
+        elif self.color_arrow == 'blue':
+            set_effect(effect='fade', r=0, g=0, b=255)
+        elif self.color_arrow == 'yellow':
+            set_effect(effect='fade', r=255, g=255, b=0)
         land()
         rospy.sleep(1)
         arming(False)
@@ -277,7 +288,7 @@ class ArrowDetecting():
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(img, "bgr8"))
         except CvBridgeError as e:
             print(e)
-    def sect_fly():
+    def sect_fly(self):
         if self.arrow == 'Sector A':
             self.y_f = 0.4
             self.x_f = 0
@@ -290,14 +301,17 @@ class ArrowDetecting():
         elif self.arrow == 'Sector D':
             self.y_f = 0
             self.x_f = -0.4
+        telem = get_telemetry(frame_id='aruco_map')
+        self.navigate_wait(x=telem.x+self.x_f*4, y=telem.y+self.y_f*2, z =self.zz, frame_id='aruco_map')
         for i in range(9):
             telem = get_telemetry(frame_id='aruco_map')
-            if check(telem.x+self.x_f*i, telem.y+self.y_f*i)== False and telem.x+self.x_f*i <= 3.2 and telem.x+self.x_f*i >= 0 and telem.y+self.y_f*i <= 2.4 and telem.y+self.y_f*i >= 0:
+            if self.check(telem.x+self.x_f*i, telem.y+self.y_f*i)== False and telem.x+self.x_f*i <= 3.2 and telem.x+self.x_f*i >= 0 and telem.y+self.y_f*i <= 2.4 and telem.y+self.y_f*i >= 0:
                 self.navigate_avoidece([telem.x,telem.y],[telem.x+self.x_f*i, telem.y+self.y_f*i])
-                self.Dron_point = True
-                rospy.sleep(1)
-                if self.cx != -1 : break
-                self.Dron_point = False
+            #self.navigate_wait(x=telem.x+self.x_f*i, y=telem.y+self.y_f*i, z =self.zz, frame_id='aruco_map')
+            self.Dron_point = True
+            rospy.sleep(1)
+            if self.cx != -1 : break
+            self.Dron_point = False
     def callback(self,data):  
         try:                                                 
             img = self.bridge.imgmsg_to_cv2(data, "bgr8") # ?????? ???????????
@@ -334,9 +348,10 @@ class ArrowDetecting():
             self.dronpoint_detect(img.copy())               
 col = ArrowDetecting(True)
 #col.Color = True
-#col.Arrow = True
-col.Dron_point = True
+col.Arrow = True
 rospy.sleep(2)
-
+col.sect_fly()
+#col.Dron_point = True
+#rospy.sleep(2)
 col.land_on_dronpoint()
 #land()
