@@ -13,6 +13,7 @@ main = Main_Config()
 main.zz = 0.5
 main.order = 3
 
+# Инициализация сервисов
 get_telemetry = rospy.ServiceProxy('get_telemetry', srv.GetTelemetry)
 navigate = rospy.ServiceProxy('navigate', srv.Navigate)
 navigate_global = rospy.ServiceProxy('navigate_global', srv.NavigateGlobal)
