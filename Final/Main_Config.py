@@ -263,6 +263,7 @@ class Main_Config():
             print(e)
         self.arrow = self.sect[num]
         print('{} required'.format(self.arrow))
+	self.Arrow = False
     def color(self,mask,a):
         thresh = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, self.st1)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, self.st2)
