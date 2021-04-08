@@ -23,7 +23,7 @@ arming = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
 land = rospy.ServiceProxy('land', Trigger)
 set_effect = rospy.ServiceProxy('led/set_effect', SetLEDEffect)
 
-class ArrowDetecting():                                                                                              
+class Main_Config():                                                                                              
     def __init__(self, simulator):
         rospy.init_node('detecting', anonymous=True)                                                              
         self.image_pub = rospy.Publisher("Detect",Image,queue_size=10) # ???????? ?????? ??? ?????????? ????????????? ???????????                                    
