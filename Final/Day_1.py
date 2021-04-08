@@ -30,7 +30,7 @@ print navigate(x=0, y=0, z=1.5, speed=0.5, frame_id='body', auto_arm=True)
 rospy.sleep(2)
 # Подлетаем к навигационной стрелке
 main.navigate_wait(x=0.8, y=1.2, z=0.5, frame_id='aruco_map')
-# Начинаем расознавать положение навигационной стрелки
+# Начинаем распознавать положение навигационной стрелки
 main.Arrow = True
 rospy.sleep(2)
 
