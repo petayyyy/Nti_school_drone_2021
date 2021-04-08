@@ -50,12 +50,15 @@ if main.order == -1:
         exit()
 # Подлетаем к навигационной стрелке, облетая препятствия, записанные в Qr коде
 main.navigate_avoidece([0.4,0.8], main.nav)
+main.navigate_mas()
+main.navigate_wait(x=main.nav[0], y=main.nav[1], z=0.5, frame_id='aruco_map')
 # Начинаем распознавать положение навигационной стрелки
 main.Arrow = True
 rospy.sleep(2)
 
 # Летим в секторе, пока не найдем стеллаж
 main.sect_fly()
+rospy.sleep(20)
 # Проверяем распонали ли мы стеллаж
 if main.cx == -1:
     # Если нет, то выводим, что не нашли стеллаж
