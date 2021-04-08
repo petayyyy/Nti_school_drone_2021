@@ -114,7 +114,8 @@ class Main_Config():
     def navigate_mas(self):
 	# Функция полета по координатам маршрута, построенного в обход препятствий
         for x, y in self.mas:
-            self.navigate_wait(x=x*0.2,y=y*0.2,z=1.5, frame_id='aruco_map')
+            self.navigate_wait(x=x*0.2, y=y*0.2, z=1.5, frame_id='aruco_map')
+            if math.sqrt((self.nav[0]-x*0.2) ** 2 + (self.nav[1]-y*0.2) ** 2) < 0.2: break
     def normalize(self, x, y):
 	# Функция нормализации координат
         return x / math.sqrt(x ** 2 + y ** 2), y / math.sqrt(x ** 2 + y ** 2)
@@ -275,8 +276,6 @@ class Main_Config():
 		    # И пробуем выравнивается по y
                     self.check_line(a=1)
                 self.check_circle()
-        self.navigate_mas()
-	self.navigate_wait(x=finish[1], y=finish[1], z=0.5, frame_id='aruco_map')
 	
     def find_arrow(self,im):
 	# Функция распознавания положения навигационной стрелки
@@ -385,6 +384,7 @@ class Main_Config():
         elif self.arrow == 'Sector D':
             self.y_f = 0
             self.x_f = -0.4
+        self.mas = []
 	# Берем координаты коптера в пространстве
         telem = get_telemetry(frame_id='aruco_map')
 	# Если координата не приводит к столкновению с препятствиями, летим подальше, чтобы не принять стеллажи из других секторов за необходимый
@@ -392,19 +392,21 @@ class Main_Config():
 	    # Летим еще подальше, чтобы не столкнуться с препятствиями
             self.navigate_avoidece([telem.x,telem.y],[telem.x+self.x_f*6, telem.y+self.y_f*6])
         else: self.navigate_avoidece([telem.x,telem.y],[telem.x+self.x_f*4, telem.y+self.y_f*4])
+        self.navigate_mas()
         for i in range(9):
-	    # Берем координаты коптера в пространстве
-            telem = get_telemetry(frame_id='aruco_map')
-            # И если координата не приводит к столкновению с препятствиями, летим в нее
-            if self.check(telem.x+self.x_f*i, telem.y+self.y_f*i)== False and telem.x+self.x_f*i <= 3.2 and telem.x+self.x_f*i >= 0 and telem.y+self.y_f*i <= 2.4 and telem.y+self.y_f*i >= 0:
-                self.navigate_avoidece([telem.x,telem.y],[telem.x+self.x_f*i, telem.y+self.y_f*i])
-            # Начинаем поиск стеллажа
+	    # Начинаем поиск стеллажа
 	    self.Dron_point = True
             rospy.sleep(1)
 	    # Если нашли стеллаж, выходим из функции
             if self.cx != -1 : break
             # Заканчиваем поиск стеллажа
             self.Dron_point = False
+	    self.mas = []
+	    # Берем координаты коптера в пространстве
+            telem = get_telemetry(frame_id='aruco_map')
+            # И если координата не приводит к столкновению с препятствиями, летим в нее
+            if self.check(telem.x+self.x_f*i, telem.y+self.y_f*i)== False and telem.x+self.x_f*i <= 3.2 and telem.x+self.x_f*i >= 0 and telem.y+self.y_f*i <= 2.4 and telem.y+self.y_f*i >= 0:
+                self.navigate_avoidece([telem.x,telem.y],[telem.x+self.x_f*i, telem.y+self.y_f*i])
     def callback(self,data):
 	# Функция обрабатывающая значение из топика, в ней происходит обработка изображения
 	# Считывание и конвертация изображения в вид пригодный для дальнейшей работы (try - для отсутствия ошибки если топик будет пустой)
