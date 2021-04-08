@@ -9,8 +9,6 @@ from std_srvs.srv import Trigger
 # Инициализация класса со всеми функциями
 from Main_Config import Main_Config
 main = Main_Config()
-# Основные данные по транспортировке заказа
-main.zz = 0.75
 
 # Инициализация сервисов
 get_telemetry = rospy.ServiceProxy('get_telemetry', srv.GetTelemetry)
