@@ -65,7 +65,7 @@ class Main_Config():
         self.col_ar = []
         self.nav = []
         self.mas = []
-        self.zz = 1
+        self.zz = 0.5
         self.cx, self.cy = -1, -1
         self.color_arrow = 'black'
         self.sect = ['Sector B','Sector D','Sector A','Sector C']
@@ -94,7 +94,7 @@ class Main_Config():
             dx /= 15  # limit the speed
             dy /= 15
             dy = -dy  # the y-axis of the frame is directed in the opposite direction of the y-axis of the marker map
-            set_position(x=telem.x + dx, y=telem.y + dy, z=self.zz, yaw=math.radians(90), frame_id='aruco_map')
+            set_position(x=telem.x + dx, y=telem.y + dy, z=self.zz+0.2, yaw=math.radians(90), frame_id='aruco_map')
             rospy.sleep(0.1)
         if self.color_arrow == 'black':
             set_effect(effect='fade', r=255, g=255, b=255)
@@ -275,7 +275,6 @@ class Main_Config():
                 if sum_pixel > 300:
                     self.color_arrow = a
                     self.Color = False
-                    print(a)
             except:pass
     def dronpoint_detect(self,img):
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -302,12 +301,13 @@ class Main_Config():
             self.y_f = 0
             self.x_f = -0.4
         telem = get_telemetry(frame_id='aruco_map')
-        self.navigate_wait(x=telem.x+self.x_f*4, y=telem.y+self.y_f*2, z =self.zz, frame_id='aruco_map')
+	if self.check(telem.x+self.x_f*4, telem.y+self.y_f*4)== False:
+            self.navigate_wait(x=telem.x+self.x_f*6, y=telem.y+self.y_f*6, z=self.zz+0.3, frame_id='aruco_map')
+        else: self.navigate_wait(x=telem.x+self.x_f*4, y=telem.y+self.y_f*4, z=self.zz+0.3, frame_id='aruco_map')
         for i in range(9):
             telem = get_telemetry(frame_id='aruco_map')
             if self.check(telem.x+self.x_f*i, telem.y+self.y_f*i)== False and telem.x+self.x_f*i <= 3.2 and telem.x+self.x_f*i >= 0 and telem.y+self.y_f*i <= 2.4 and telem.y+self.y_f*i >= 0:
                 self.navigate_avoidece([telem.x,telem.y],[telem.x+self.x_f*i, telem.y+self.y_f*i])
-            #self.navigate_wait(x=telem.x+self.x_f*i, y=telem.y+self.y_f*i, z =self.zz, frame_id='aruco_map')
             self.Dron_point = True
             rospy.sleep(1)
             if self.cx != -1 : break
@@ -342,6 +342,9 @@ class Main_Config():
             self.color(cv2.inRange(img, self.red_low, self.red_high),'red')          #Red
             self.color(cv2.inRange(img, self.yellow_low, self.yellow_high),'yellow')   #Yellow
             self.color(cv2.inRange(img, self.blue_low, self.blue_high),'blue')          #Blue
+	    if self.color_arrow == 'yellow': self.zz = 0.25
+	    elif self.color_arrow == 'blue': self.zz = 0.75
+	    elif self.color_arrow == 'red': self.zz = 1
         if self.Arrow:
             self.find_arrow(img.copy())
         if self.Dron_point:
