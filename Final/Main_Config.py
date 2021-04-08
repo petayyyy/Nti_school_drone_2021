@@ -24,7 +24,7 @@ land = rospy.ServiceProxy('land', Trigger)
 set_effect = rospy.ServiceProxy('led/set_effect', SetLEDEffect)
 
 class Main_Config():                                                                                              
-    def __init__(self, simulator):
+    def __init__(self, simulator=False):
         rospy.init_node('detecting', anonymous=True)                                                              
         self.image_pub = rospy.Publisher("Detect",Image,queue_size=10) # ???????? ?????? ??? ?????????? ????????????? ???????????                                    
         
