@@ -7,6 +7,7 @@ from Main_Config import Main_Config
 main = Main_Config()
 main.zz = 0.5
 main.order = 3
+
 get_telemetry = rospy.ServiceProxy('get_telemetry', srv.GetTelemetry)
 navigate = rospy.ServiceProxy('navigate', srv.Navigate)
 navigate_global = rospy.ServiceProxy('navigate_global', srv.NavigateGlobal)
@@ -25,6 +26,12 @@ main.Arrow = True
 rospy.sleep(2)
 
 main.sect_fly()
+if main.cx == -1:
+    print("Dronpoint don't detecting")
+        main.navigate_wait(x=0, y=0, z=0.5, frame_id='aruco_map')
+        land()
+        print("{} don't delivered in {} for {} min {} sec".format(main.order,main.arrow,(time.time()-start_t)//60,(time.time()-start_t)%60))
+        exit()
 main.land_on_dronpoint()
 
 print navigate(x=0, y=0, z=0.5, speed=0.5, frame_id='body', auto_arm=True)
