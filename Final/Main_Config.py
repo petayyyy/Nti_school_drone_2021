@@ -32,12 +32,12 @@ class Main_Config():
     def __init__(self, simulator=False):
 	# Создаем ноду
         rospy.init_node('detecting', anonymous=True)   
-	# Создаем топик "Detect" для вывода измененного изображения(обводка распознаных объектов)
+	# Создаем топик "Detect" для вывода измененного изображения(обводка распознанных объектов)
         self.image_pub = rospy.Publisher("Detect",Image,queue_size=10)                                    
         
 	# Если мы летаем в симуляторе, то класс нужно вызывать со значением True (Пример: col = Main_Config(True) )
         self.simulator = simulator
-	# Присваем значения цветов в соответствии со средой симулятор/реальный мир
+	# Присвоим значения цветов в соответствии со средой симулятор/реальный мир
         # Ваши параметры могут разниться, не забудьте подобрать новые
 	if self.simulator:
 	    # Параметры для симулятора
@@ -69,11 +69,11 @@ class Main_Config():
 	# Переменные условий начала действий
 	# Отвечает за рапознавание положения навигационной стрелки
         self.Arrow = False  
-	# Отвечает за рапознавание Qr кода
+	# Отвечает за распознавание Qr кода
         self.Qr = False
-	# Отвечает за рапознавание цвета навигационной стрелки
+	# Отвечает за распознавание цвета навигационной стрелки
         self.Color = False
-	# Отвечает за рапознавание стеллажа
+	# Отвечает за распознавание стеллажа
         self.Dron_point = False
         
 	# Переменные хранящие данные
@@ -85,7 +85,7 @@ class Main_Config():
         self.nav = []
 	# Координаты маршрута, построенного в обход препятствий
         self.mas = []
-	# Высота стелллажа
+	# Высота стеллажа
         self.zz = 0.5
 	# Координаты положения стеллажа относительно матрицы камеры
         self.cx, self.cy = -1, -1
@@ -102,7 +102,7 @@ class Main_Config():
         self.image_sub = rospy.Subscriber("main_camera/image_raw",Image,self.callback)
     def navigate_wait(self, x=0, y=0, z=0, yaw=math.radians(90), speed=1, frame_id='aruco_map', auto_arm=False, tolerance=0.15):
 	# Функция полета до указанной точки
-	# Летим до указаноой точки
+	# Летим до указанной точки
 	# И пока не прилетим, не выходим из цикла 
         navigate(x=x, y=y, z=z, yaw=yaw, speed=speed, frame_id=frame_id, auto_arm=auto_arm)
         while not rospy.is_shutdown():
@@ -131,7 +131,7 @@ class Main_Config():
             dx /= 15
             dy /= 15
             dy = -dy
-            # Летим по созданному вектору к центру стеллажа
+            # Летим по заданному вектору к центру стеллажа
 	    set_position(x=telem.x + dx, y=telem.y + dy, z=self.zz+0.2, yaw=math.radians(90), frame_id='aruco_map')
             rospy.sleep(0.1)
         # Когда прилетели производим индикацию, в соответствии с цветом навигационной стрелки
@@ -254,20 +254,20 @@ class Main_Config():
         self.nav_x, self.nav_y = (finish[0]*100)//20, (finish[1]*100)//20
 	# Координаты движения дрона
         self.f_x, self.f_y = start[0]//0.2, start[1]//0.2
-	# Переменная, хранящая значения колличества координат для облета, чтобы коптер не зациклился
+	# Переменная, хранящая значения количества координат для облета, чтобы коптер не зациклился
         h = 5
         while (self.f_x != self.nav_x or self.f_y != self.nav_y) and h > 0:
             h-=1
 	    if self.f_x == self.nav_x:
 	        # Если мы выравнялись по оси x
-		# То выравниваемся по y
+		# То выровниваемся по y
                 self.vector_y()
             elif self.f_y == self.nav_y:
 		# Если мы выравнялись по оси y
-		# То выравниваемся по x
+		# То выравниваем по x
                 self.vector_x()
             else:
-		# Если мы не выравнялись не по одной из осей
+		# Если мы не выровнялись не по одной из осей
 		# То ищем самую кратчайшую ось для выравнивания
                 if self.nav_x < self.nav_y:
 		    # И пробуем выравнивается по x 
@@ -320,7 +320,7 @@ class Main_Config():
         num = need_arr[2]
 	# Обводим на изображении навигационную стрелку
         cv2.drawContours(out, [need_arr[0]], -1, (255,105,180), 3)
-	# Выводим в топик изменненое изображение
+	# Выводим в топик измененное изображение
         try:
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(out, "bgr8"))
         except CvBridgeError as e:
@@ -328,7 +328,7 @@ class Main_Config():
 	
 	# Заносим в переменную значение положения навигационной стрелки
         self.arrow = self.sect[num]
-	# Выводим в терминал сообщение о результатах распознавания
+	# Вывод в терминал сообщение о результатах распознавания
         print('{} required'.format(self.arrow))
 	# Останавливаем поиск положения навигационной стрелки
 	self.Arrow = False
@@ -342,7 +342,7 @@ class Main_Config():
 	# И проходим по ним
         for c in cnt:    
             try: 
-		# Определяем колличество пикселей занятых цветом
+		# Определяем количество пикселей занятых цветом
                 moments = cv2.moments(c, 1)       
                 sum_pixel = moments['m00']
 		# Если их больше 300, то мы нашли цвет навигационной стрелки
@@ -367,7 +367,7 @@ class Main_Config():
             [x, y, w, h] = cv2.boundingRect(self.cnt) 
             self.cx = x + w // 2
             self.cy = y + h // 2
-	    # Возращаем True если нашли стеллаж
+	    # Возвращаем True если нашли стеллаж
             return True
     def sect_fly(self):
 	# Функция полета от навигационной стрелки до стеллажа
@@ -420,9 +420,9 @@ class Main_Config():
 	self.out.write(img)
 	# Начинаем распознавать Qr код
         if self.Qr == True:
-	    # Производим анилиз изображения на наличие Qr кода
+	    # Производим анализ изображения на наличие Qr кода
             barcodes  = pyzbar.decode(img) 
-	    # Если нашли Qr код, то работем с ним
+	    # Если нашли Qr код, то работаем с ним
             if barcodes:
                 for bar in barcodes:
 		    # Если до этого Qr код не распознавали
@@ -472,7 +472,7 @@ class Main_Config():
 		# Если нашли стеллаж, обводим его
                 cv2.drawContours(img, [self.cnt], 0, (255,105,180), 2)
 
-        # Выводим в топик изменненое изображение
+        # Выводим в топик измененное изображение
 	try:
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(img, "bgr8"))
         except CvBridgeError as e:
