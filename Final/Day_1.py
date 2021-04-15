@@ -40,7 +40,7 @@ main.sect_fly()
 rospy.sleep(20)
 # Проверяем распонали ли мы стеллаж
 if main.cx == -1:
-    # Если нет, то выводим, что не нашли стеллаж
+    # Если нет, то выводим соответствующее сообщение
     print("Dronpoint don't detecting")
     # Производим полет в зону "Старт"
     main.navigate_wait(x=0, y=0, z=0.5, frame_id='aruco_map')
